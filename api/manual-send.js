@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { enforceDashboardToken } from "./_lib/auth.js";
 import { createBriefPreview } from "./_lib/preview.js";
-import { loadSettings } from "./_lib/settings.js";
+import { loadSettings, mergeSettings } from "./_lib/settings.js";
 
 function missingSmtpFields() {
   return [
@@ -49,9 +49,10 @@ export default async function handler(request, response) {
 
   const payload = request.body || {};
   const settings = await loadSettings();
+  const mergedSettings = mergeSettings(settings, payload.settings || {});
   const preview = createBriefPreview({
     briefType: payload.briefType === "evening" ? "evening" : "morning",
-    settings,
+    settings: mergedSettings,
     recipients: payload.recipients,
     subjectOverride: payload.subject
   });

@@ -1,5 +1,5 @@
 import { createBriefPreview } from "./_lib/preview.js";
-import { loadSettings } from "./_lib/settings.js";
+import { loadSettings, mergeSettings } from "./_lib/settings.js";
 
 export default async function handler(request, response) {
   if (request.method !== "POST") {
@@ -12,9 +12,10 @@ export default async function handler(request, response) {
 
   const settings = await loadSettings();
   const payload = request.body || {};
+  const mergedSettings = mergeSettings(settings, payload.settings || {});
   const preview = createBriefPreview({
     briefType: payload.briefType === "evening" ? "evening" : "morning",
-    settings,
+    settings: mergedSettings,
     recipients: payload.recipients,
     subjectOverride: payload.subject
   });

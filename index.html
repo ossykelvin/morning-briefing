@@ -709,7 +709,8 @@
           body: JSON.stringify({
             briefType: document.getElementById("brief-type").value,
             recipients: document.getElementById("send-recipients").value.trim(),
-            subject: document.getElementById("send-subject").value.trim()
+            subject: document.getElementById("send-subject").value.trim(),
+            settings: collectFormData()
           })
         });
         const data = await response.json();
@@ -741,7 +742,8 @@
           body: JSON.stringify({
             briefType: document.getElementById("brief-type").value,
             recipients: document.getElementById("send-recipients").value.trim(),
-            subject: document.getElementById("send-subject").value.trim()
+            subject: document.getElementById("send-subject").value.trim(),
+            settings: collectFormData()
           })
         });
         const data = await response.json();

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-const SETTINGS_KEYS = [
+export const SETTINGS_KEYS = [
   "MORNING_BRIEF_TIME",
   "EVENING_BRIEF_TIME",
   "TIMEZONE",
@@ -16,7 +16,7 @@ const SETTINGS_KEYS = [
   "CALENDAR_SOURCE"
 ];
 
-const DEFAULT_SETTINGS = {
+export const DEFAULT_SETTINGS = {
   MORNING_BRIEF_TIME: "07:00",
   EVENING_BRIEF_TIME: "21:10",
   TIMEZONE: "Africa/Lagos",
@@ -69,6 +69,37 @@ export async function loadSettings() {
     }
     if (process.env[key]) {
       merged[key] = process.env[key];
+    }
+  }
+
+  return {
+    ...merged,
+    RECIPIENT_LIST_ITEMS: merged.RECIPIENT_LIST
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    NEWS_SOURCE_ITEMS: merged.NEWS_SOURCES
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    SOCIAL_SOURCE_ITEMS: merged.SOCIAL_SOURCES
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean)
+  };
+}
+
+export function mergeSettings(baseSettings = {}, overrides = {}) {
+  const merged = {
+    ...DEFAULT_SETTINGS
+  };
+
+  for (const key of SETTINGS_KEYS) {
+    if (baseSettings[key]) {
+      merged[key] = normalizeSettingValue(key, baseSettings[key]);
+    }
+    if (overrides[key] !== undefined && overrides[key] !== null && String(overrides[key]).trim() !== "") {
+      merged[key] = normalizeSettingValue(key, overrides[key]);
     }
   }
 

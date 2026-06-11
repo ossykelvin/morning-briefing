@@ -19,6 +19,17 @@ function formatLocalTimestamp(timezone) {
   return formatter.format(new Date());
 }
 
+function formatLocalDate(timezone) {
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone || "Africa/Lagos",
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  });
+
+  return formatter.format(new Date());
+}
+
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -51,7 +62,7 @@ export function createBriefPreview({
 }) {
   const timezone = settings.TIMEZONE || "Africa/Lagos";
   const timestamp = formatLocalTimestamp(timezone);
-  const dateStamp = timestamp.replace(/, \d{2}:\d{2}$/, "");
+  const dateStamp = formatLocalDate(timezone);
   const resolvedRecipients = splitList(recipients || settings.RECIPIENT_LIST);
   const newsSources = splitList(settings.NEWS_SOURCES);
   const socialSources = splitList(settings.SOCIAL_SOURCES);
