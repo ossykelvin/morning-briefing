@@ -1,3 +1,4 @@
+import { enforceDashboardToken } from "./_lib/auth.js";
 import { buildEnvContent, loadSettings, saveSettings } from "./_lib/settings.js";
 
 function sendJson(response, statusCode, payload) {
@@ -15,6 +16,10 @@ export default async function handler(request, response) {
   }
 
   if (request.method === "POST") {
+    if (!enforceDashboardToken(request, response)) {
+      return;
+    }
+
     const payload = request.body || {};
 
     try {

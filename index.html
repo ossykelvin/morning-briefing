@@ -31,8 +31,9 @@
     }
     a { color: var(--blue); text-decoration: none; }
     a:hover { text-decoration: underline; }
+    code { font-family: "Courier New", Consolas, monospace; }
     .shell {
-      width: min(1180px, calc(100% - 32px));
+      width: min(1220px, calc(100% - 32px));
       margin: 24px auto 40px;
     }
     .hero {
@@ -75,7 +76,7 @@
       z-index: 1;
     }
     .hero-copy {
-      max-width: 720px;
+      max-width: 760px;
       font-size: 16px;
       line-height: 25px;
       color: #dce6f8;
@@ -89,13 +90,13 @@
       gap: 16px;
     }
     .hero-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       margin-top: 24px;
       position: relative;
       z-index: 1;
     }
     .main-grid {
-      grid-template-columns: 1.25fr 0.75fr;
+      grid-template-columns: 1.15fr 0.85fr;
       margin-top: 18px;
       align-items: start;
     }
@@ -132,7 +133,17 @@
       margin-top: 10px;
       font-size: 13px;
       line-height: 20px;
-      color: var(--muted);
+      color: #dce6f8;
+    }
+    .hero .metric {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.12);
+      box-shadow: none;
+    }
+    .hero .metric-label,
+    .hero .metric-value,
+    .hero .metric-note {
+      color: #ffffff;
     }
     .panel-header {
       display: flex;
@@ -273,15 +284,42 @@
       line-height: 20px;
       color: #344054;
     }
-    @media (max-width: 980px) {
+    .preview-meta {
+      display: grid;
+      gap: 8px;
+      font-size: 13px;
+      line-height: 20px;
+      color: #344054;
+    }
+    .preview-frame {
+      width: 100%;
+      min-height: 780px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+    .subject-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid #d0d5dd;
+      border-radius: 8px;
+      background: #fbfcfe;
+      font-size: 13px;
+      line-height: 20px;
+      color: #344054;
+    }
+    @media (max-width: 1100px) {
       .main-grid { grid-template-columns: 1fr; }
-      .hero-grid { grid-template-columns: 1fr; }
+      .hero-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 720px) {
-      .shell { width: min(100% - 20px, 1180px); }
+      .shell { width: min(100% - 20px, 1220px); }
       .hero { padding: 22px; }
       h1 { font-size: 34px; }
-      .field-row, .mini-grid { grid-template-columns: 1fr; }
+      .field-row, .mini-grid, .hero-grid { grid-template-columns: 1fr; }
+      .preview-frame { min-height: 620px; }
     }
   </style>
 </head>
@@ -291,7 +329,7 @@
       <div class="eyebrow">Blue Theme Briefing Console</div>
       <h1>KOP Morning and Evening Briefs</h1>
       <div class="hero-copy">
-        Review runtime settings, update recipients and source lists, preview generated environment values, and inspect the latest brief artifacts from one place.
+        Update settings, generate an on-demand brief preview, inspect the rendered email in-page, and send it only when you approve the final output.
       </div>
       <div class="hero-grid">
         <div class="card metric">
@@ -309,6 +347,11 @@
           <div class="metric-value" id="metric-recipients">0</div>
           <div class="metric-note">Configured delivery list count.</div>
         </div>
+        <div class="card metric">
+          <div class="metric-label">Manual Send</div>
+          <div class="metric-value" id="metric-send-state">Idle</div>
+          <div class="metric-note">Preview first, then send through SMTP when configured.</div>
+        </div>
       </div>
     </section>
 
@@ -324,7 +367,7 @@
 
         <div class="stack">
           <div class="legend">
-            In local development this page can write back to <code>.env.local</code>. On a deployed Vercel runtime the file system is read-only, so the page will still generate an updated env block for manual use.
+            In local development this page can write back to <code>.env.local</code>. In deployed Vercel it remains useful for preview and manual send, but settings persistence still depends on a writable backend or manual env updates.
           </div>
 
           <div class="field-row">
@@ -398,11 +441,56 @@
             <button class="secondary" id="copy-env-button" type="button">Copy Env Preview</button>
           </div>
 
-          <div id="status-box" class="status"></div>
+          <div id="settings-status" class="status"></div>
         </div>
       </section>
 
       <aside class="stack">
+        <section class="card panel">
+          <div class="panel-label">Run Control</div>
+          <div class="panel-header">
+            <h2 class="panel-title">Generate and Send</h2>
+          </div>
+
+          <div class="stack">
+            <div class="field-row">
+              <div class="field-group">
+                <label for="brief-type">Brief type</label>
+                <select id="brief-type">
+                  <option value="morning">Morning</option>
+                  <option value="evening">Evening</option>
+                </select>
+              </div>
+              <div class="field-group">
+                <label for="admin-token">Admin token</label>
+                <input id="admin-token" type="password" placeholder="Only needed if DASHBOARD_ADMIN_TOKEN is set">
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label for="send-subject">Email subject</label>
+              <input id="send-subject" type="text" placeholder="Generated after preview">
+            </div>
+
+            <div class="field-group">
+              <label for="send-recipients">Manual send recipients</label>
+              <textarea id="send-recipients" placeholder="Defaults to RECIPIENT_LIST when empty"></textarea>
+            </div>
+
+            <div class="actions">
+              <button class="primary" id="preview-button" type="button">Run Preview</button>
+              <button class="secondary" id="send-button" type="button" disabled>Send Email Manually</button>
+            </div>
+
+            <div id="run-status" class="status"></div>
+
+            <div class="preview-meta">
+              <div class="subject-chip">Last generated: <span id="preview-generated-at">Not generated yet</span></div>
+              <div class="subject-chip">Preview subject: <span id="preview-subject">None</span></div>
+            </div>
+          </div>
+        </section>
+
         <section class="card panel">
           <div class="panel-label">Output</div>
           <div class="panel-header">
@@ -423,6 +511,17 @@
         </section>
       </aside>
     </div>
+
+    <section class="card panel" style="margin-top: 18px;">
+      <div class="panel-label">Live Preview</div>
+      <div class="panel-header">
+        <h2 class="panel-title">Rendered Email Outcome</h2>
+      </div>
+      <div class="legend" style="margin-bottom: 14px;">
+        The preview uses the current dashboard settings and the selected brief type. It does not send anything until you click <b>Send Email Manually</b>.
+      </div>
+      <iframe id="preview-frame" class="preview-frame" title="Brief preview"></iframe>
+    </section>
   </div>
 
   <script>
@@ -442,19 +541,20 @@
     ];
 
     let lastEnvPreview = "";
+    let latestPreview = null;
 
     function fieldElement(key) {
       return document.querySelector(`[name="${key}"]`);
     }
 
-    function setStatus(type, message) {
-      const box = document.getElementById("status-box");
+    function setStatus(targetId, type, message) {
+      const box = document.getElementById(targetId);
       box.className = `status visible ${type}`;
       box.textContent = message;
     }
 
-    function clearStatus() {
-      const box = document.getElementById("status-box");
+    function clearStatus(targetId) {
+      const box = document.getElementById(targetId);
       box.className = "status";
       box.textContent = "";
     }
@@ -481,6 +581,13 @@
       document.getElementById("metric-recipients").textContent = String(recipientCount);
     }
 
+    function syncSendRecipients(settings) {
+      const target = document.getElementById("send-recipients");
+      if (!target.value.trim()) {
+        target.value = settings.RECIPIENT_LIST || "";
+      }
+    }
+
     function hydrateForm(settings) {
       formFields.forEach((key) => {
         const element = fieldElement(key);
@@ -490,6 +597,7 @@
       });
       applyTheme(settings);
       updateMetrics(settings);
+      syncSendRecipients(settings);
       lastEnvPreview = buildEnvPreview(settings);
       document.getElementById("env-preview").textContent = lastEnvPreview;
     }
@@ -503,14 +611,25 @@
       return payload;
     }
 
+    function requestHeaders(includeAdminToken = false) {
+      const headers = { "content-type": "application/json" };
+      if (includeAdminToken) {
+        const token = document.getElementById("admin-token").value.trim();
+        if (token) {
+          headers["x-dashboard-token"] = token;
+        }
+      }
+      return headers;
+    }
+
     async function loadSettings(showInfo = false) {
-      clearStatus();
+      clearStatus("settings-status");
       const response = await fetch("/api/settings");
       const data = await response.json();
       hydrateForm(data.settings);
       document.getElementById("persistence-state").textContent = data.persistence;
       if (showInfo) {
-        setStatus("info", "Settings reloaded from the current runtime.");
+        setStatus("settings-status", "info", "Settings reloaded from the current runtime.");
       }
     }
 
@@ -533,14 +652,12 @@
     async function saveSettings() {
       const button = document.getElementById("save-button");
       button.disabled = true;
-      clearStatus();
+      clearStatus("settings-status");
       try {
         const payload = collectFormData();
         const response = await fetch("/api/settings", {
           method: "POST",
-          headers: {
-            "content-type": "application/json"
-          },
+          headers: requestHeaders(true),
           body: JSON.stringify(payload)
         });
         const data = await response.json();
@@ -549,13 +666,13 @@
         if (data.ok) {
           hydrateForm(data.settings);
           document.getElementById("persistence-state").textContent = data.persistence;
-          setStatus("success", "Settings saved to .env.local.");
+          setStatus("settings-status", "success", "Settings saved successfully.");
         } else {
           document.getElementById("persistence-state").textContent = data.persistence || "read-only";
-          setStatus("error", "Runtime is read-only. Use the generated env preview manually.");
+          setStatus("settings-status", "error", data.detail || data.error || "Settings could not be saved.");
         }
       } catch (error) {
-        setStatus("error", `Save failed: ${error.message}`);
+        setStatus("settings-status", "error", `Save failed: ${error.message}`);
       } finally {
         button.disabled = false;
       }
@@ -564,18 +681,91 @@
     async function copyEnvPreview() {
       try {
         await navigator.clipboard.writeText(lastEnvPreview);
-        setStatus("success", "Environment preview copied to clipboard.");
+        setStatus("settings-status", "success", "Environment preview copied to clipboard.");
       } catch (error) {
-        setStatus("error", `Clipboard copy failed: ${error.message}`);
+        setStatus("settings-status", "error", `Clipboard copy failed: ${error.message}`);
+      }
+    }
+
+    function renderPreview(preview) {
+      latestPreview = preview;
+      document.getElementById("preview-frame").srcdoc = preview.html;
+      document.getElementById("preview-generated-at").textContent = preview.generatedAt;
+      document.getElementById("preview-subject").textContent = preview.subject;
+      document.getElementById("send-subject").value = preview.subject;
+      document.getElementById("send-recipients").value = preview.recipients;
+      document.getElementById("send-button").disabled = false;
+      document.getElementById("metric-send-state").textContent = "Previewed";
+    }
+
+    async function runPreview() {
+      const button = document.getElementById("preview-button");
+      button.disabled = true;
+      clearStatus("run-status");
+      try {
+        const response = await fetch("/api/preview", {
+          method: "POST",
+          headers: requestHeaders(false),
+          body: JSON.stringify({
+            briefType: document.getElementById("brief-type").value,
+            recipients: document.getElementById("send-recipients").value.trim(),
+            subject: document.getElementById("send-subject").value.trim()
+          })
+        });
+        const data = await response.json();
+        if (!data.ok) {
+          throw new Error(data.error || "Preview generation failed");
+        }
+        renderPreview(data.preview);
+        setStatus("run-status", "success", "Preview generated. Review it below before sending.");
+      } catch (error) {
+        setStatus("run-status", "error", `Preview failed: ${error.message}`);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function sendPreview() {
+      const button = document.getElementById("send-button");
+      if (!latestPreview) {
+        setStatus("run-status", "error", "Generate a preview before sending.");
+        return;
+      }
+
+      button.disabled = true;
+      clearStatus("run-status");
+      try {
+        const response = await fetch("/api/manual-send", {
+          method: "POST",
+          headers: requestHeaders(true),
+          body: JSON.stringify({
+            briefType: document.getElementById("brief-type").value,
+            recipients: document.getElementById("send-recipients").value.trim(),
+            subject: document.getElementById("send-subject").value.trim()
+          })
+        });
+        const data = await response.json();
+        if (!data.ok) {
+          throw new Error(data.error || data.detail || "Manual send failed");
+        }
+        document.getElementById("metric-send-state").textContent = "Sent";
+        setStatus("run-status", "success", `Email sent successfully. Message ID: ${data.messageId}`);
+      } catch (error) {
+        document.getElementById("metric-send-state").textContent = "Blocked";
+        setStatus("run-status", "error", `Send failed: ${error.message}`);
+      } finally {
+        button.disabled = false;
       }
     }
 
     document.getElementById("save-button").addEventListener("click", saveSettings);
     document.getElementById("refresh-button").addEventListener("click", () => loadSettings(true));
     document.getElementById("copy-env-button").addEventListener("click", copyEnvPreview);
+    document.getElementById("preview-button").addEventListener("click", runPreview);
+    document.getElementById("send-button").addEventListener("click", sendPreview);
 
-    loadSettings().catch((error) => setStatus("error", `Settings load failed: ${error.message}`));
-    loadBriefs().catch((error) => setStatus("error", `Brief list failed: ${error.message}`));
+    loadSettings().catch((error) => setStatus("settings-status", "error", `Settings load failed: ${error.message}`));
+    loadBriefs().catch((error) => setStatus("run-status", "error", `Brief list failed: ${error.message}`));
   </script>
 </body>
 </html>
