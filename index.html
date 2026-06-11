@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KOP Briefing Console</title>
+  <style>
+    :root {
+      --navy: #0D1B3D;
+      --blue: #2563EB;
+      --canvas: #F2F4F7;
+      --surface: #FFFFFF;
+      --text: #182230;
+      --muted: #667085;
+      --border: #D0D5DD;
+      --success: #0E9384;
+      --danger: #B42318;
+      --radius: 8px;
+      --shadow: 0 20px 50px rgba(13, 27, 61, 0.08);
+      --font: Arial, Helvetica, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.14), transparent 30%),
+        linear-gradient(180deg, #eef3fb 0%, var(--canvas) 100%);
+      color: var(--text);
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 24px auto 40px;
+    }
+    .hero {
+      background: var(--navy);
+      color: #fff;
+      border-radius: 10px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -80px;
+      top: -60px;
+      width: 220px;
+      height: 220px;
+      background: rgba(37, 99, 235, 0.28);
+      border-radius: 50%;
+    }
+    .eyebrow {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: rgba(37, 99, 235, 0.26);
+      border: 1px solid rgba(255,255,255,0.18);
+      padding: 8px 12px;
+      border-radius: 999px;
+      position: relative;
+      z-index: 1;
+    }
+    h1 {
+      margin: 16px 0 8px;
+      font-size: 44px;
+      line-height: 1;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-copy {
+      max-width: 720px;
+      font-size: 16px;
+      line-height: 25px;
+      color: #dce6f8;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-grid,
+    .main-grid,
+    .mini-grid {
+      display: grid;
+      gap: 16px;
+    }
+    .hero-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 24px;
+      position: relative;
+      z-index: 1;
+    }
+    .main-grid {
+      grid-template-columns: 1.25fr 0.75fr;
+      margin-top: 18px;
+      align-items: start;
+    }
+    .mini-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 16px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .metric,
+    .panel {
+      padding: 18px;
+    }
+    .metric-label,
+    .panel-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .metric-value {
+      font-size: 28px;
+      line-height: 1;
+      color: var(--navy);
+      font-weight: 700;
+    }
+    .metric-note {
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 20px;
+      color: var(--muted);
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .panel-title {
+      margin: 0;
+      font-size: 26px;
+      line-height: 30px;
+      color: var(--navy);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: #e8f1ff;
+      color: var(--blue);
+      border: 1px solid #c8d8ff;
+      white-space: nowrap;
+    }
+    .stack {
+      display: grid;
+      gap: 14px;
+    }
+    .field-group {
+      display: grid;
+      gap: 8px;
+    }
+    .field-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+    }
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: 2px solid rgba(37, 99, 235, 0.18);
+      border-color: var(--blue);
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 160ms ease, opacity 160ms ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.6; cursor: wait; transform: none; }
+    .primary {
+      background: var(--navy);
+      color: #fff;
+    }
+    .secondary {
+      background: #edf4ff;
+      color: var(--blue);
+      border: 1px solid #c8d8ff;
+    }
+    .status {
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13px;
+      line-height: 20px;
+      display: none;
+    }
+    .status.visible { display: block; }
+    .status.success { background: #e7f8f5; color: #0a6c63; border: 1px solid #b4e8de; }
+    .status.error { background: #fef0f0; color: var(--danger); border: 1px solid #f7c5c2; }
+    .status.info { background: #edf4ff; color: var(--blue); border: 1px solid #d2e3ff; }
+    .brief-list {
+      display: grid;
+      gap: 10px;
+    }
+    .brief-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fbfcfe;
+    }
+    .brief-date {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .code-block {
+      font-family: "Courier New", Consolas, monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      background: #101828;
+      color: #f8fafc;
+      border-radius: 8px;
+      padding: 14px;
+      min-height: 160px;
+    }
+    .note {
+      font-size: 13px;
+      line-height: 20px;
+      color: var(--muted);
+    }
+    .legend {
+      border-left: 4px solid var(--blue);
+      background: #f6faff;
+      padding: 12px 14px;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      line-height: 20px;
+      color: #344054;
+    }
+    @media (max-width: 980px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .hero-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .shell { width: min(100% - 20px, 1180px); }
+      .hero { padding: 22px; }
+      h1 { font-size: 34px; }
+      .field-row, .mini-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="eyebrow">Blue Theme Briefing Console</div>
+      <h1>KOP Morning and Evening Briefs</h1>
+      <div class="hero-copy">
+        Review runtime settings, update recipients and source lists, preview generated environment values, and inspect the latest brief artifacts from one place.
+      </div>
+      <div class="hero-grid">
+        <div class="card metric">
+          <div class="metric-label">Morning Run</div>
+          <div class="metric-value" id="metric-morning">07:00</div>
+          <div class="metric-note">Weekday cron target in Africa/Lagos.</div>
+        </div>
+        <div class="card metric">
+          <div class="metric-label">Evening Run</div>
+          <div class="metric-value" id="metric-evening">21:10</div>
+          <div class="metric-note">Weekday wrap-up slot in Africa/Lagos.</div>
+        </div>
+        <div class="card metric">
+          <div class="metric-label">Recipients</div>
+          <div class="metric-value" id="metric-recipients">0</div>
+          <div class="metric-note">Configured delivery list count.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="main-grid">
+      <section class="card panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-label">Settings</div>
+            <h2 class="panel-title">Edit Brief Configuration</h2>
+          </div>
+          <div class="pill" id="persistence-state">Loading</div>
+        </div>
+
+        <div class="stack">
+          <div class="legend">
+            In local development this page can write back to <code>.env.local</code>. On a deployed Vercel runtime the file system is read-only, so the page will still generate an updated env block for manual use.
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label for="morning-time">Morning brief time</label>
+              <input id="morning-time" name="MORNING_BRIEF_TIME" type="time">
+            </div>
+            <div class="field-group">
+              <label for="evening-time">Evening brief time</label>
+              <input id="evening-time" name="EVENING_BRIEF_TIME" type="time">
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label for="timezone">Timezone</label>
+              <input id="timezone" name="TIMEZONE" type="text" placeholder="Africa/Lagos">
+            </div>
+            <div class="field-group">
+              <label for="delivery-mode">Gmail delivery mode</label>
+              <input id="delivery-mode" name="GMAIL_DELIVERY_MODE" type="text" placeholder="connector">
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="recipients">Recipient list</label>
+            <textarea id="recipients" name="RECIPIENT_LIST" placeholder="one@example.com, two@example.com"></textarea>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label for="news-sources">News sources</label>
+              <textarea id="news-sources" name="NEWS_SOURCES"></textarea>
+            </div>
+            <div class="field-group">
+              <label for="social-sources">Social sources</label>
+              <textarea id="social-sources" name="SOCIAL_SOURCES"></textarea>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label for="calendar-source">Calendar source</label>
+              <input id="calendar-source" name="CALENDAR_SOURCE" type="text">
+            </div>
+            <div class="field-group">
+              <label for="theme-navy">Theme navy</label>
+              <input id="theme-navy" name="THEME_NAVY" type="text">
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label for="theme-blue">Theme blue</label>
+              <input id="theme-blue" name="THEME_BLUE" type="text">
+            </div>
+            <div class="field-group">
+              <label for="theme-background">Theme background</label>
+              <input id="theme-background" name="THEME_BACKGROUND" type="text">
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="theme-white">Theme white</label>
+            <input id="theme-white" name="THEME_WHITE" type="text">
+          </div>
+
+          <div class="actions">
+            <button class="primary" id="save-button" type="button">Save Settings</button>
+            <button class="secondary" id="refresh-button" type="button">Reload Settings</button>
+            <button class="secondary" id="copy-env-button" type="button">Copy Env Preview</button>
+          </div>
+
+          <div id="status-box" class="status"></div>
+        </div>
+      </section>
+
+      <aside class="stack">
+        <section class="card panel">
+          <div class="panel-label">Output</div>
+          <div class="panel-header">
+            <h2 class="panel-title">Environment Preview</h2>
+          </div>
+          <div id="env-preview" class="code-block">Loading settings...</div>
+        </section>
+
+        <section class="card panel">
+          <div class="panel-label">Brief History</div>
+          <div class="panel-header">
+            <h2 class="panel-title">Generated HTML Briefs</h2>
+          </div>
+          <div id="brief-list" class="brief-list"></div>
+          <div class="note" style="margin-top: 12px;">
+            Brief files are discovered from the project root and linked directly for quick inspection.
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const formFields = [
+      "MORNING_BRIEF_TIME",
+      "EVENING_BRIEF_TIME",
+      "TIMEZONE",
+      "RECIPIENT_LIST",
+      "NEWS_SOURCES",
+      "SOCIAL_SOURCES",
+      "THEME_NAVY",
+      "THEME_BLUE",
+      "THEME_BACKGROUND",
+      "THEME_WHITE",
+      "GMAIL_DELIVERY_MODE",
+      "CALENDAR_SOURCE"
+    ];
+
+    let lastEnvPreview = "";
+
+    function fieldElement(key) {
+      return document.querySelector(`[name="${key}"]`);
+    }
+
+    function setStatus(type, message) {
+      const box = document.getElementById("status-box");
+      box.className = `status visible ${type}`;
+      box.textContent = message;
+    }
+
+    function clearStatus() {
+      const box = document.getElementById("status-box");
+      box.className = "status";
+      box.textContent = "";
+    }
+
+    function buildEnvPreview(settings) {
+      return formFields.map((key) => `${key}=${settings[key] || ""}`).join("\n");
+    }
+
+    function applyTheme(settings) {
+      const root = document.documentElement;
+      root.style.setProperty("--navy", settings.THEME_NAVY || "#0D1B3D");
+      root.style.setProperty("--blue", settings.THEME_BLUE || "#2563EB");
+      root.style.setProperty("--canvas", settings.THEME_BACKGROUND || "#F2F4F7");
+      root.style.setProperty("--surface", settings.THEME_WHITE || "#FFFFFF");
+    }
+
+    function updateMetrics(settings) {
+      document.getElementById("metric-morning").textContent = settings.MORNING_BRIEF_TIME || "07:00";
+      document.getElementById("metric-evening").textContent = settings.EVENING_BRIEF_TIME || "21:10";
+      const recipientCount = (settings.RECIPIENT_LIST || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean).length;
+      document.getElementById("metric-recipients").textContent = String(recipientCount);
+    }
+
+    function hydrateForm(settings) {
+      formFields.forEach((key) => {
+        const element = fieldElement(key);
+        if (element) {
+          element.value = settings[key] || "";
+        }
+      });
+      applyTheme(settings);
+      updateMetrics(settings);
+      lastEnvPreview = buildEnvPreview(settings);
+      document.getElementById("env-preview").textContent = lastEnvPreview;
+    }
+
+    function collectFormData() {
+      const payload = {};
+      formFields.forEach((key) => {
+        const element = fieldElement(key);
+        payload[key] = element ? element.value.trim() : "";
+      });
+      return payload;
+    }
+
+    async function loadSettings(showInfo = false) {
+      clearStatus();
+      const response = await fetch("/api/settings");
+      const data = await response.json();
+      hydrateForm(data.settings);
+      document.getElementById("persistence-state").textContent = data.persistence;
+      if (showInfo) {
+        setStatus("info", "Settings reloaded from the current runtime.");
+      }
+    }
+
+    async function loadBriefs() {
+      const response = await fetch("/api/briefs");
+      const data = await response.json();
+      const briefList = document.getElementById("brief-list");
+      if (!data.ok || !data.briefs.length) {
+        briefList.innerHTML = '<div class="brief-item">No brief files found yet.</div>';
+        return;
+      }
+      briefList.innerHTML = data.briefs.map((brief) => `
+        <div class="brief-item">
+          <div class="brief-date">${brief.date || "Unknown date"}</div>
+          <div><a href="${brief.href}" target="_blank" rel="noreferrer">${brief.name}</a></div>
+        </div>
+      `).join("");
+    }
+
+    async function saveSettings() {
+      const button = document.getElementById("save-button");
+      button.disabled = true;
+      clearStatus();
+      try {
+        const payload = collectFormData();
+        const response = await fetch("/api/settings", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        lastEnvPreview = data.envPreview || buildEnvPreview(payload);
+        document.getElementById("env-preview").textContent = lastEnvPreview;
+        if (data.ok) {
+          hydrateForm(data.settings);
+          document.getElementById("persistence-state").textContent = data.persistence;
+          setStatus("success", "Settings saved to .env.local.");
+        } else {
+          document.getElementById("persistence-state").textContent = data.persistence || "read-only";
+          setStatus("error", "Runtime is read-only. Use the generated env preview manually.");
+        }
+      } catch (error) {
+        setStatus("error", `Save failed: ${error.message}`);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function copyEnvPreview() {
+      try {
+        await navigator.clipboard.writeText(lastEnvPreview);
+        setStatus("success", "Environment preview copied to clipboard.");
+      } catch (error) {
+        setStatus("error", `Clipboard copy failed: ${error.message}`);
+      }
+    }
+
+    document.getElementById("save-button").addEventListener("click", saveSettings);
+    document.getElementById("refresh-button").addEventListener("click", () => loadSettings(true));
+    document.getElementById("copy-env-button").addEventListener("click", copyEnvPreview);
+
+    loadSettings().catch((error) => setStatus("error", `Settings load failed: ${error.message}`));
+    loadBriefs().catch((error) => setStatus("error", `Brief list failed: ${error.message}`));
+  </script>
+</body>
+</html>
